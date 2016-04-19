@@ -29,7 +29,7 @@ import Foundation
 */
 public protocol ResponseSerializer {
     /// The type of serialized object to be created by this `ResponseSerializer`.
-    typealias SerializedObject
+    associatedtype SerializedObject
 
     /**
         A closure used by response handlers that takes a request, response, and data and returns a result.
@@ -170,9 +170,10 @@ extension Request {
         - returns: A string response serializer.
     */
     public static func stringResponseSerializer(
-        var encoding encoding: NSStringEncoding? = nil)
+        encoding encoding: NSStringEncoding? = nil)
         -> GenericResponseSerializer<String>
     {
+        var givenEncoding = encoding
         return GenericResponseSerializer { _, response, data in
             guard let validData = data else {
                 let failureReason = "String could not be serialized because input data was nil."
@@ -180,13 +181,13 @@ extension Request {
                 return .Failure(data, error)
             }
 
-            if let encodingName = response?.textEncodingName where encoding == nil {
-                encoding = CFStringConvertEncodingToNSStringEncoding(
+            if let encodingName = response?.textEncodingName where givenEncoding == nil {
+                givenEncoding = CFStringConvertEncodingToNSStringEncoding(
                     CFStringConvertIANACharSetNameToEncoding(encodingName)
                 )
             }
 
-            let actualEncoding = encoding ?? NSISOLatin1StringEncoding
+            let actualEncoding = givenEncoding ?? NSISOLatin1StringEncoding
 
             if let string = NSString(data: validData, encoding: actualEncoding) as? String {
                 return .Success(string)
